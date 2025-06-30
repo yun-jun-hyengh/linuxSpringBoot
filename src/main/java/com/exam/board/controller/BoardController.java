@@ -5,10 +5,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.persistence.EntityManager;
@@ -38,7 +41,10 @@ public class BoardController {
 	private EntityManager entityManager;
 	
 	// 윈도우 `111
-	private static final String UPLOAD_DIR = "C:/upload/";
+	//private static final String UPLOAD_DIR = "C:/upload/";
+	
+	// 리눅스
+	private static final String UPLOAD_DIR = "/opt/tomcat9/upload/";
 	
 	@GetMapping("/boardfile")
 	public String boardList(Model model) { // 여기 한번 수정 
@@ -81,9 +87,16 @@ public class BoardController {
 		String filePath = null;
 		
 		// 윈도우
-		File uploadDir = new File(UPLOAD_DIR);
-		if(!uploadDir.exists()) {
-			uploadDir.mkdirs();
+//		File uploadDir = new File(UPLOAD_DIR);
+//		if(!uploadDir.exists()) {
+//			uploadDir.mkdirs();
+//		}
+		
+		try {
+			createDirectoryWithPermissions(UPLOAD_DIR);
+		} catch(IOException e) {
+			e.printStackTrace();
+			return "error";
 		}
 		
 		if(file != null && !file.isEmpty()) {
@@ -185,6 +198,35 @@ public class BoardController {
 		} catch(Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(500).body("삭제실패");
+		}
+	}
+	
+	private static void createDirectoryWithPermissions(String dirPath) throws IOException {
+		Path path = Paths.get(dirPath);
+		if(Files.notExists(path)) {
+			Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxr-xr-x");
+			Files.createDirectories(path, PosixFilePermissions.asFileAttribute(permissions));
+		}
+		try {
+			changeOwnerAndGroup(dirPath, "tomcat", "tomcat");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private static void changeOwnerAndGroup(String dirPath, String owner, String group) throws IOException {
+		String command = String.format("chown -R %s:%s %s", owner, group, dirPath);
+		ProcessBuilder processBuilder = new ProcessBuilder();
+		processBuilder.command("bash", "-c", command);
+		processBuilder.inheritIO();
+		Process process = processBuilder.start();
+		try {
+			int exitCode = process.waitFor();
+			if(exitCode != 0) {
+				throw new IOException("Failed to change owner and group for directory : " + dirPath);
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 	}
 
