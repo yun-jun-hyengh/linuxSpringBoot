@@ -12,6 +12,6 @@
 <body>
 	<h2>Hello World!!~~</h2>
 	<a href="${path}/board/boardfile">게시판</a>
-	<h2>리눅스 수업 듣느라 고생 많이 하셨습니다 !! </h2>
+	<h2>리눅스 수업 듣느라 고생 많이 하셨습니다 !! 수고했어요~~~~ 축하합니다. </h2>
 </body>
 </html>
